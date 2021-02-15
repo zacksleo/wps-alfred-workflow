@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	aw "github.com/deanishe/awgo"
@@ -144,8 +145,8 @@ func getLatest(wpsSid string) {
 	for _, file := range files {
 		wf.NewItem(fmt.Sprintf("%s", file.Name)).
 			Subtitle(fmt.Sprintf("%s前 %s上阅读 %s", getTimeDiff(file.Mtime/1000), file.OriginalDeviceType, file.OriginalDeviceName)).
-			Valid(true).
-			Var("fileid", file.FileID)
+			Valid(true).Icon(getIcon(file.Name)).
+			Var("fileid", file.FileID).Cmd().Subtitle("在 WPS 中查看")
 	}
 	wf.SendFeedback()
 }
@@ -195,10 +196,41 @@ func queryDocs(wpsSid string, query string) {
 	for _, file := range files {
 		wf.NewItem(fmt.Sprintf("%s", file.Fname)).
 			Subtitle(fmt.Sprintf("%s前 %s %d", getTimeDiff(file.Mtime), file.Path, file.Fsize)).
-			Valid(true).
-			Var("fileid", fmt.Sprintf("%d", file.ID))
+			Valid(true).Icon(getIcon(file.Fname)).
+			Var("fileid", fmt.Sprintf("%d", file.ID)).Cmd().Subtitle("在 WPS 中查看")
 	}
 	wf.SendFeedback()
+}
+
+// 根据文件名称获取对应的图标
+func getIcon(name string) *aw.Icon {
+	arr := strings.Split(name, ".")
+	iconDoc := &aw.Icon{Value: "doc.png"}
+	iconPdf := &aw.Icon{Value: "pdf.png"}
+	iconPptx := &aw.Icon{Value: "pptx.png"}
+	iconTxt := &aw.Icon{Value: "txt.png"}
+	iconXlsx := &aw.Icon{Value: "xlsx.png"}
+	iconUnknown := &aw.Icon{Value: "unknown.png"}
+	switch arr[len(arr)-1] {
+	case "doc":
+		return iconDoc
+	case "docx":
+		return iconDoc
+	case "pdf":
+		return iconPdf
+	case "pptx":
+		return iconPptx
+	case "txt":
+		return iconTxt
+	case "csv":
+		return iconXlsx
+	case "xlsx":
+		return iconXlsx
+	case "xls":
+		return iconXlsx
+	default:
+		return iconUnknown
+	}
 }
 
 func init() {

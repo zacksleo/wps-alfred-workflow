@@ -9,7 +9,28 @@
 	<key>connections</key>
 	<dict>
 		<key>58522435-0951-4A4D-A1FC-49550C0AFB6C</key>
-		<array/>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>F824E2BA-7848-4349-A7DB-7179BC53287C</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>9C1E23A0-A815-4736-BFC0-E431DBC76827</string>
+				<key>modifiers</key>
+				<integer>1048576</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 	</dict>
 	<key>createdby</key>
 	<string>zacksleo &lt;zacksleo@gmail.com&gt;</string>
@@ -70,6 +91,44 @@
 			<key>version</key>
 			<integer>3</integer>
 		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>browser</key>
+				<string></string>
+				<key>spaces</key>
+				<string></string>
+				<key>url</key>
+				<string>https://www.kdocs.cn/p/{var:fileid}</string>
+				<key>utf8</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openurl</string>
+			<key>uid</key>
+			<string>F824E2BA-7848-4349-A7DB-7179BC53287C</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>browser</key>
+				<string></string>
+				<key>spaces</key>
+				<string></string>
+				<key>url</key>
+				<string>ksoqing://type=open&amp;fileid={var:fileid}&amp;from=clouddriver</string>
+				<key>utf8</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openurl</string>
+			<key>uid</key>
+			<string>9C1E23A0-A815-4736-BFC0-E431DBC76827</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
 	</array>
 	<key>readme</key>
 	<string></string>
@@ -80,7 +139,21 @@
 			<key>note</key>
 			<string>Show current configuration</string>
 			<key>xpos</key>
-			<integer>275</integer>
+			<integer>175</integer>
+			<key>ypos</key>
+			<integer>85</integer>
+		</dict>
+		<key>9C1E23A0-A815-4736-BFC0-E431DBC76827</key>
+		<dict>
+			<key>xpos</key>
+			<integer>430</integer>
+			<key>ypos</key>
+			<integer>260</integer>
+		</dict>
+		<key>F824E2BA-7848-4349-A7DB-7179BC53287C</key>
+		<dict>
+			<key>xpos</key>
+			<integer>425</integer>
 			<key>ypos</key>
 			<integer>85</integer>
 		</dict>
