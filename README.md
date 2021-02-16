@@ -2,6 +2,11 @@
 
 alfred workflow for WPS
 
+## 安装
+
+打开 `https://github.com/zacksleo/wps-alfred-workflow/releases`，找到最新版本的 WPS.alfredworkflow
+，下载并安装
+
 ## 登录
 
 1. 登录网页版[wps](https://kdocs.cn), 登录成功后, 在 Cookie 中获取 wps_sid
