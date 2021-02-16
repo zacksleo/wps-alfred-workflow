@@ -24,6 +24,11 @@ wps_sid 会保存在钥匙串中
 
 ![登录](.github/screen-shots/wps-search.png)
 
+## 打开
+
+1. 使用回车键，通过 kdocs.cn 在浏览器中打开文档
+2. 使用 Cmd, 在客户端中打开
+
 ## 删除钥匙串重新登录
 
 在 keychain 中，搜索 wps, 找到 wps_sid 并删除
