@@ -4,7 +4,7 @@ alfred workflow for WPS
 
 ## 登录
 
-1. 登录网页版[wps](kdocs.cn), 登录成功后, 在 Cookie 中获取 wps_sid
+1. 登录网页版[wps](https://kdocs.cn), 登录成功后, 在 Cookie 中获取 wps_sid
 
 2. `wps {wps_sid}`
 
@@ -23,3 +23,7 @@ wps_sid 会保存在钥匙串中
 `wps {keyword}`
 
 ![登录](.github/screen-shots/wps-search.png)
+
+## 删除钥匙串重新登录
+
+在 keychain 中，搜索 wps, 找到 wps_sid 并删除
