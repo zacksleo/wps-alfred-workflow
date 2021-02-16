@@ -1,4 +1,6 @@
-# Alfred workflow for WPS
+# WPS Alfred Workflow
+
+Alfred Workflow for WPS Office
 
 ## 安装
 
