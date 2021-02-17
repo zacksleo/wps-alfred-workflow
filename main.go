@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 var (
 	wf              *aw.Workflow
 	recentCacheName = "recent.json"     // Filename of cached repo list
+	groupCacheName  = "group.json"      // Filename of cached repo list
 	maxCacheAge     = 180 * time.Minute // How long to cache repo list for
 )
 
@@ -96,6 +98,45 @@ type QueryResult struct {
 	Files  []Doc `json:"files"`
 }
 
+// FileResult define
+type FileResult struct {
+	NextFilter string `json:"next_filter"`
+	NextOffset int    `json:"next_offset"`
+	Result     string `json:"result"`
+	Files      []File
+}
+
+// GroupResult define
+type GroupResult struct {
+	NextFilter string `json:"next_filter"`
+	NextOffset int    `json:"next_offset"`
+	Result     string `json:"result"`
+	Files      []Group
+}
+
+// Group struct
+type Group struct {
+	File
+	Linkgroupid int `json:"linkgroupid"`
+}
+
+// File struct
+type File struct {
+	Groupid  int    `json:"groupid"`
+	Parentid int    `json:"parentid"`
+	Fname    string `json:"fname"`
+	Fsize    int    `json:"fsize"`
+	Ftype    string `json:"ftype"`
+	Ctime    int    `json:"ctime"`
+	Mtime    int64  `json:"mtime"`
+	Deleted  bool   `json:"deleted"`
+	ID       int64  `json:"id"`
+	Store    int    `json:"store"`
+	Storeid  string `json:"storeid"`
+	Fver     int    `json:"fver"`
+	Fsha     string `json:"fsha"`
+}
+
 func getTimeDiff(timestamp int64) string {
 	now := time.Now()
 	sec := now.Unix()
@@ -143,10 +184,12 @@ func getLatest(wpsSid string) {
 	}
 
 	for _, file := range files {
-		wf.NewItem(fmt.Sprintf("%s", file.Name)).
+		item := wf.NewItem(fmt.Sprintf("%s", file.Name)).
 			Subtitle(fmt.Sprintf("%s前 %s上阅读 %s", getTimeDiff(file.Mtime/1000), file.OriginalDeviceType, file.OriginalDeviceName)).
 			Valid(true).Icon(getIcon(file.Name)).
-			Var("fileid", file.FileID).Cmd().Subtitle("在 WPS 中查看")
+			Var("fileid", file.FileID).Var("name", file.Name)
+		item.Opt().Subtitle("复制分享连接")
+		item.Cmd().Subtitle("在 WPS 中查看")
 	}
 	wf.SendFeedback()
 }
@@ -198,6 +241,98 @@ func queryDocs(wpsSid string, query string) {
 			Subtitle(fmt.Sprintf("%s前 %s %d", getTimeDiff(file.Mtime), file.Path, file.Fsize)).
 			Valid(true).Icon(getIcon(file.Fname)).
 			Var("fileid", fmt.Sprintf("%d", file.ID)).Cmd().Subtitle("在 WPS 中查看")
+	}
+	wf.SendFeedback()
+}
+
+func getGroups(wpsSid string) {
+
+	queryResult := GroupResult{}
+	files := queryResult.Files
+
+	if wf.Cache.Exists(groupCacheName) {
+		wf.Cache.LoadJSON(groupCacheName, &files)
+	}
+
+	if wf.Cache.Expired(groupCacheName, maxCacheAge) {
+		req, err := http.NewRequest("GET", "https://www.kdocs.cn/3rd/drive/api/v5/groups/special/files", nil)
+		req.Header.Add("Cookie", "wps_sid="+wpsSid)
+		q := req.URL.Query()
+		q.Add("linkgroup", "true")
+		q.Add("include", "pic_thumbnail")
+		q.Add("offset", "0")
+		q.Add("count", "20")
+		q.Add("orderby", "mtime")
+		q.Add("order", "DESC")
+		q.Add("append", "false")
+		client := &http.Client{}
+		resp, err := client.Do(req)
+
+		if err != nil {
+			wf.WarnEmpty("查询失败", err.Error())
+			return
+		}
+
+		result, _ := ioutil.ReadAll(resp.Body)
+		json.Unmarshal(result, &queryResult)
+
+		wf.Cache.StoreJSON(groupCacheName, queryResult.Files)
+	}
+
+	for _, file := range files {
+		item := wf.NewItem(fmt.Sprintf("%s", file.Fname)).
+			Subtitle(fmt.Sprintf("%s前", getTimeDiff(file.Mtime/1000))).
+			Valid(true).Icon(getIcon(file.Fname)).
+			Var("fileid", fmt.Sprintf("%d", file.ID)).Var("name", file.Fname)
+		item.Opt().Subtitle("复制分享连接")
+		item.Cmd().Subtitle("在 WPS 中查看")
+	}
+	wf.SendFeedback()
+}
+
+func getGroupFiles(wpsSid string, groupID string, parentID string) {
+
+	queryResult := FileResult{}
+	files := queryResult.Files
+	cacheName := fmt.Sprintf("%s-%s.json", groupID, parentID)
+
+	if wf.Cache.Exists(cacheName) {
+		wf.Cache.LoadJSON(cacheName, &files)
+	}
+
+	if wf.Cache.Expired(cacheName, maxCacheAge) {
+		req, err := http.NewRequest("GET", fmt.Sprintf("https://www.kdocs.cn/3rd/drive/api/v5/groups/%s/files", groupID), nil)
+		req.Header.Add("Cookie", "wps_sid="+wpsSid)
+		q := req.URL.Query()
+		q.Add("linkgroup", "true")
+		q.Add("include", "pic_thumbnail")
+		q.Add("offset", "0")
+		q.Add("count", "20")
+		q.Add("orderby", "mtime")
+		q.Add("order", "DESC")
+		q.Add("append", "false")
+		q.Add("parentid", parentID)
+		client := &http.Client{}
+		resp, err := client.Do(req)
+
+		if err != nil {
+			wf.WarnEmpty("查询失败", err.Error())
+			return
+		}
+
+		result, _ := ioutil.ReadAll(resp.Body)
+		json.Unmarshal(result, &queryResult)
+
+		wf.Cache.StoreJSON(cacheName, queryResult.Files)
+	}
+
+	for _, file := range files {
+		item := wf.NewItem(fmt.Sprintf("%s", file.Fname)).
+			Subtitle(fmt.Sprintf("%s前", getTimeDiff(file.Mtime/1000))).
+			Valid(true).Icon(getIcon(file.Fname)).
+			Var("fileid", fmt.Sprintf("%d", file.ID)).Var("name", file.Fname)
+		item.Opt().Subtitle("复制分享连接")
+		item.Cmd().Subtitle("在 WPS 中查看")
 	}
 	wf.SendFeedback()
 }
@@ -256,6 +391,18 @@ func run() {
 	// 默认搜索最近的文档
 	if query == "" {
 		getLatest(wpsSid)
+		return
+	}
+
+	if query == "/" {
+		getGroups(wpsSid)
+		return
+	}
+
+	matched, err := regexp.MatchString(`\d+/\d+`, query)
+	if matched {
+		params := strings.Split(query, "/")
+		getGroupFiles(wpsSid, params[0], params[1])
 		return
 	}
 
