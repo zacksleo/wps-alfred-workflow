@@ -340,7 +340,7 @@ func getGroupFiles(wpsSid string) {
 			Subtitle(fmt.Sprintf("%s前", getTimeDiff(file.Mtime))).
 			Valid(true).Icon(getFtypeIcon(file.Fname, file.Ftype)).
 			Var("groupid", groupID).Var("fileid", fmt.Sprintf("%d", file.ID)).
-			Var("path", path+file.Fname)
+			Var("path", path+"/"+file.Fname)
 		item.Opt().Subtitle("复制分享连接")
 		item.Cmd().Subtitle("在 WPS 中查看")
 	}
