@@ -15,7 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"regexp"
+	"os"
 	"strings"
 	"time"
 
@@ -117,12 +117,12 @@ type GroupResult struct {
 // Group struct
 type Group struct {
 	File
-	Linkgroupid int `json:"linkgroupid"`
+	LinkgroupID int64 `json:"linkgroupid"`
 }
 
 // File struct
 type File struct {
-	Groupid  int    `json:"groupid"`
+	GroupID  int    `json:"groupid"`
 	Parentid int    `json:"parentid"`
 	Fname    string `json:"fname"`
 	Fsize    int    `json:"fsize"`
@@ -265,14 +265,13 @@ func getGroups(wpsSid string) {
 		q.Add("orderby", "mtime")
 		q.Add("order", "DESC")
 		q.Add("append", "false")
+		req.URL.RawQuery = q.Encode()
 		client := &http.Client{}
 		resp, err := client.Do(req)
-
 		if err != nil {
 			wf.WarnEmpty("查询失败", err.Error())
 			return
 		}
-
 		result, _ := ioutil.ReadAll(resp.Body)
 		json.Unmarshal(result, &queryResult)
 
@@ -280,17 +279,26 @@ func getGroups(wpsSid string) {
 	}
 
 	for _, file := range files {
+		groupid := fmt.Sprintf("%d", file.LinkgroupID)
+		if groupid == "0" {
+			groupid = fmt.Sprintf("%d", file.ID)
+		}
 		item := wf.NewItem(fmt.Sprintf("%s", file.Fname)).
-			Subtitle(fmt.Sprintf("%s前", getTimeDiff(file.Mtime/1000))).
-			Valid(true).Icon(getIcon(file.Fname)).
-			Var("fileid", fmt.Sprintf("%d", file.ID)).Var("name", file.Fname)
+			Subtitle(fmt.Sprintf("%s前", getTimeDiff(file.Mtime))).
+			Valid(true).Icon(getFtypeIcon(file.Fname, file.Ftype)).
+			Var("fileid", fmt.Sprintf("%d", file.ID)).Var("name", file.Fname).Var("groupid", groupid).
+			Var("path", "/"+file.Fname)
 		item.Opt().Subtitle("复制分享连接")
 		item.Cmd().Subtitle("在 WPS 中查看")
 	}
 	wf.SendFeedback()
 }
 
-func getGroupFiles(wpsSid string, groupID string, parentID string) {
+func getGroupFiles(wpsSid string) {
+
+	groupID := os.Getenv("groupid")
+	parentID := os.Getenv("fileid")
+	path := os.Getenv("path")
 
 	queryResult := FileResult{}
 	files := queryResult.Files
@@ -312,6 +320,7 @@ func getGroupFiles(wpsSid string, groupID string, parentID string) {
 		q.Add("order", "DESC")
 		q.Add("append", "false")
 		q.Add("parentid", parentID)
+		req.URL.RawQuery = q.Encode()
 		client := &http.Client{}
 		resp, err := client.Do(req)
 
@@ -328,13 +337,28 @@ func getGroupFiles(wpsSid string, groupID string, parentID string) {
 
 	for _, file := range files {
 		item := wf.NewItem(fmt.Sprintf("%s", file.Fname)).
-			Subtitle(fmt.Sprintf("%s前", getTimeDiff(file.Mtime/1000))).
-			Valid(true).Icon(getIcon(file.Fname)).
-			Var("fileid", fmt.Sprintf("%d", file.ID)).Var("name", file.Fname)
+			Subtitle(fmt.Sprintf("%s前", getTimeDiff(file.Mtime))).
+			Valid(true).Icon(getFtypeIcon(file.Fname, file.Ftype)).
+			Var("groupid", groupID).Var("fileid", fmt.Sprintf("%d", file.ID)).
+			Var("path", path+file.Fname)
 		item.Opt().Subtitle("复制分享连接")
 		item.Cmd().Subtitle("在 WPS 中查看")
 	}
 	wf.SendFeedback()
+}
+
+//根据文件类型和文件名称获取对应的图标
+func getFtypeIcon(name string, ftype string) *aw.Icon {
+	switch ftype {
+	case "folder":
+		return &aw.Icon{Value: "folder.png"}
+	case "linkfolder":
+		return &aw.Icon{Value: "linkfolder.png"}
+	case "file":
+		return getIcon(name)
+	default:
+		return &aw.Icon{Value: "folder.png"}
+	}
 }
 
 // 根据文件名称获取对应的图标
@@ -399,10 +423,8 @@ func run() {
 		return
 	}
 
-	matched, err := regexp.MatchString(`\d+/\d+`, query)
-	if matched {
-		params := strings.Split(query, "/")
-		getGroupFiles(wpsSid, params[0], params[1])
+	if strings.HasPrefix(query, "/") {
+		getGroupFiles(wpsSid)
 		return
 	}
 
