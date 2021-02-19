@@ -10,6 +10,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -137,6 +139,12 @@ type File struct {
 	Fsha     string `json:"fsha"`
 }
 
+// GroupFile struct
+type GroupFile struct {
+	GroupID string `json:"groupid"`
+	FileID  int64  `json:"fileid"`
+}
+
 func getTimeDiff(timestamp int64) string {
 	now := time.Now()
 	sec := now.Unix()
@@ -151,6 +159,18 @@ func getTimeDiff(timestamp int64) string {
 		return fmt.Sprintf("%d小时", diff/3600)
 	}
 	return fmt.Sprintf("%d天", diff/86400)
+}
+
+func getMd5(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func getGroupFile(text string) GroupFile {
+	groupFile := GroupFile{}
+	wf.Cache.LoadJSON(getMd5(text)+".json", &groupFile)
+	return groupFile
 }
 
 //查询最近的文档
@@ -182,6 +202,12 @@ func getLatest(wpsSid string) {
 
 		wf.Cache.StoreJSON(recentCacheName, files)
 	}
+
+	wf.NewItem("浏览").
+		Subtitle("查看所有目录").
+		Valid(true).Icon(&aw.Icon{Value: "folder.png"}).
+		Var("groupid", "0").Var("fileid", "0").
+		Var("path", "/").Valid(true).Autocomplete("/")
 
 	for _, file := range files {
 		item := wf.NewItem(fmt.Sprintf("%s", file.Name)).
@@ -218,7 +244,6 @@ func queryDocs(wpsSid string, query string) {
 		q.Add("search_file_content", "false")
 		q.Add("search_file_name", "true")
 		req.URL.RawQuery = q.Encode()
-
 		client := &http.Client{}
 		resp, err := client.Do(req)
 
@@ -246,12 +271,10 @@ func queryDocs(wpsSid string, query string) {
 }
 
 func getGroups(wpsSid string) {
-
 	queryResult := GroupResult{}
-	files := queryResult.Files
 
 	if wf.Cache.Exists(groupCacheName) {
-		wf.Cache.LoadJSON(groupCacheName, &files)
+		wf.Cache.LoadJSON(groupCacheName, &queryResult.Files)
 	}
 
 	if wf.Cache.Expired(groupCacheName, maxCacheAge) {
@@ -274,38 +297,54 @@ func getGroups(wpsSid string) {
 		}
 		result, _ := ioutil.ReadAll(resp.Body)
 		json.Unmarshal(result, &queryResult)
-
 		wf.Cache.StoreJSON(groupCacheName, queryResult.Files)
+		for _, file := range queryResult.Files {
+			groupid := fmt.Sprintf("%d", file.LinkgroupID)
+			if groupid == "0" {
+				groupid = fmt.Sprintf("%d", file.GroupID)
+			}
+			wf.Cache.StoreJSON(getMd5("/"+file.Fname)+".json", GroupFile{GroupID: groupid, FileID: file.ID})
+		}
 	}
 
-	for _, file := range files {
+	wf.NewItem("最近").
+		Subtitle("查看最近使用的文档").
+		Valid(true).Icon(&aw.Icon{Value: "recent.png"}).
+		Var("groupid", "0").Var("fileid", "0").
+		Var("path", "").Valid(true).Autocomplete("")
+
+	for _, file := range queryResult.Files {
 		groupid := fmt.Sprintf("%d", file.LinkgroupID)
 		if groupid == "0" {
-			groupid = fmt.Sprintf("%d", file.ID)
+			groupid = fmt.Sprintf("%d", file.GroupID)
 		}
 		item := wf.NewItem(fmt.Sprintf("%s", file.Fname)).
 			Subtitle(fmt.Sprintf("%s前", getTimeDiff(file.Mtime))).
 			Valid(true).Icon(getFtypeIcon(file.Fname, file.Ftype)).
 			Var("fileid", fmt.Sprintf("%d", file.ID)).Var("name", file.Fname).Var("groupid", groupid).
-			Var("path", "/"+file.Fname)
+			Var("path", "/"+file.Fname).Valid(true).Autocomplete("/" + file.Fname)
 		item.Opt().Subtitle("复制分享连接")
 		item.Cmd().Subtitle("在 WPS 中查看")
 	}
 	wf.SendFeedback()
 }
 
-func getGroupFiles(wpsSid string) {
+func getGroupFiles(path string, wpsSid string) {
 
 	groupID := os.Getenv("groupid")
 	parentID := os.Getenv("fileid")
-	path := os.Getenv("path")
+	parentFileID := os.Getenv("parentFileid")
+	if groupID == "" {
+		groupFile := getGroupFile(path)
+		groupID = groupFile.GroupID
+		parentID = fmt.Sprintf("%d", groupFile.FileID)
+	}
 
 	queryResult := FileResult{}
-	files := queryResult.Files
 	cacheName := fmt.Sprintf("%s-%s.json", groupID, parentID)
 
 	if wf.Cache.Exists(cacheName) {
-		wf.Cache.LoadJSON(cacheName, &files)
+		wf.Cache.LoadJSON(cacheName, &queryResult.Files)
 	}
 
 	if wf.Cache.Expired(cacheName, maxCacheAge) {
@@ -333,17 +372,34 @@ func getGroupFiles(wpsSid string) {
 		json.Unmarshal(result, &queryResult)
 
 		wf.Cache.StoreJSON(cacheName, queryResult.Files)
+		for _, file := range queryResult.Files {
+			wf.Cache.StoreJSON(getMd5(path+"/"+file.Fname)+".json", GroupFile{GroupID: groupID, FileID: file.ID})
+		}
 	}
 
-	for _, file := range files {
+	paths := strings.Split(path, "/")
+	currentPath := "/" + strings.Join(paths[0:len(paths)-1], "/")
+	item := wf.NewItem("..").
+		Subtitle("返回上级目录").
+		Valid(true).Icon(&aw.Icon{Value: "back.png"}).
+		Var("groupid", groupID).Var("fileid", parentFileID).
+		Var("path", currentPath).Valid(true).Autocomplete(currentPath)
+	item.Opt().Subtitle("复制分享连接")
+	item.Cmd().Subtitle("在 WPS 中查看")
+
+	for _, file := range queryResult.Files {
+
 		item := wf.NewItem(fmt.Sprintf("%s", file.Fname)).
 			Subtitle(fmt.Sprintf("%s前", getTimeDiff(file.Mtime))).
 			Valid(true).Icon(getFtypeIcon(file.Fname, file.Ftype)).
 			Var("groupid", groupID).Var("fileid", fmt.Sprintf("%d", file.ID)).
-			Var("path", path+"/"+file.Fname)
+			Var("parentFileid", parentID).
+			Var("path", path+"/"+file.Fname).Valid(true).Autocomplete(path + "/" + file.Fname)
 		item.Opt().Subtitle("复制分享连接")
 		item.Cmd().Subtitle("在 WPS 中查看")
 	}
+	item.Opt().Subtitle("复制分享连接")
+	item.Cmd().Subtitle("在 WPS 中查看")
 	wf.SendFeedback()
 }
 
@@ -355,6 +411,8 @@ func getFtypeIcon(name string, ftype string) *aw.Icon {
 	case "linkfolder":
 		return &aw.Icon{Value: "linkfolder.png"}
 	case "file":
+		return getIcon(name)
+	case "sharefile":
 		return getIcon(name)
 	default:
 		return &aw.Icon{Value: "folder.png"}
@@ -398,7 +456,10 @@ func init() {
 
 func run() {
 
-	query := wf.Args()[0]
+	query := ""
+	if len(wf.Args()) > 0 {
+		query = wf.Args()[0]
+	}
 
 	if query == "logout" {
 		logout()
@@ -413,7 +474,7 @@ func run() {
 	}
 
 	// 默认搜索最近的文档
-	if query == "" {
+	if len(query) < 1 {
 		getLatest(wpsSid)
 		return
 	}
@@ -424,7 +485,7 @@ func run() {
 	}
 
 	if strings.HasPrefix(query, "/") {
-		getGroupFiles(wpsSid)
+		getGroupFiles(query, wpsSid)
 		return
 	}
 
