@@ -29,6 +29,16 @@ wps_sid 会保存在钥匙串中
 
 ![登录](.github/screen-shots/wps-search.png)
 
+## 目录浏览
+
+选择菜单后，使用 Tab 键盘操作
+
+`wps /`
+
+`wps /{path}/{subpath}`
+
+![返回](.github/screen-shots/wps-back.png)
+
 ## 打开
 
 1. 使用回车键，通过 kdocs.cn 在浏览器中打开文档
