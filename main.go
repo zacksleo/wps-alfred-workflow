@@ -334,6 +334,8 @@ func getGroupFiles(path string, wpsSid string) {
 	groupID := os.Getenv("groupid")
 	parentID := os.Getenv("fileid")
 	parentFileID := os.Getenv("parentFileid")
+	wpsCacheDir := os.Getenv("wps_cache_dir")
+	log.Printf("cacheDir=%s", wpsCacheDir)
 	if groupID == "" {
 		groupFile := getGroupFile(path)
 		groupID = groupFile.GroupID
@@ -394,7 +396,8 @@ func getGroupFiles(path string, wpsSid string) {
 			Valid(true).Icon(getFtypeIcon(file.Fname, file.Ftype)).
 			Var("groupid", groupID).Var("fileid", fmt.Sprintf("%d", file.ID)).
 			Var("parentFileid", parentID).
-			Var("path", path+"/"+file.Fname).Valid(true).Autocomplete(path + "/" + file.Fname)
+			Var("path", path+"/"+file.Fname).Valid(true).Autocomplete(path + "/" + file.Fname).
+			Quicklook(wpsCacheDir + path + "/" + file.Fname)
 		item.Opt().Subtitle("复制分享连接")
 		item.Cmd().Subtitle("在 WPS 中查看")
 	}

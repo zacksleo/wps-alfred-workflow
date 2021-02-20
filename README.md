@@ -7,6 +7,10 @@ Alfred Workflow for WPS Office
 打开 `https://github.com/zacksleo/wps-alfred-workflow/releases`，找到最新版本的 WPS.alfredworkflow
 ，下载并安装
 
+## 配置
+
+配置环境变量 `wps_cache_dir` 为 wps 缓存目录，如 `/Users/zacksleo/Library/Containers/com.kingsoft.wpsoffice.mac/Data/Library/Application Support/Kingsoft/WPS Cloud Files/userdata/qing/filecache/zacksleo的云文档`
+
 ## 登录
 
 1. 登录网页版[wps](https://kdocs.cn), 登录成功后, 在 Cookie 中获取 wps_sid
