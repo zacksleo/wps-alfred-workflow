@@ -378,7 +378,7 @@ func getGroupFiles(path string, wpsSid string) {
 	}
 
 	paths := strings.Split(path, "/")
-	currentPath := "/" + strings.Join(paths[0:len(paths)-1], "/")
+	currentPath := "/" + strings.Join(paths[1:len(paths)-1], "/")
 	item := wf.NewItem("..").
 		Subtitle("返回上级目录").
 		Valid(true).Icon(&aw.Icon{Value: "back.png"}).
