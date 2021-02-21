@@ -141,8 +141,26 @@ type File struct {
 
 // GroupFile struct
 type GroupFile struct {
-	GroupID string `json:"groupid"`
-	FileID  int64  `json:"fileid"`
+	GroupID     string `json:"groupid"`
+	IsLinkGroup bool   `json:"islinkgroup"`
+	FileID      int64  `json:"fileid"`
+}
+
+// Path 路径
+type Path struct {
+	Fname       string `json:"fname"`
+	FileID      int64  `json:"fileid"`
+	CorpID      int64  `json:"corpid"`
+	GroupID     int64  `json:"groupid"`
+	LinkGroupID int64  `json:"linkgroupid"`
+	Type        string `json:"type"`
+}
+
+// GroupFilePathResult 文件路径
+type GroupFilePathResult struct {
+	GroupType string `json:"group_type"`
+	Path      []Path `json:"path"`
+	Result    string `json:"result"`
 }
 
 func getTimeDiff(timestamp int64) string {
@@ -173,8 +191,44 @@ func getGroupFile(text string) GroupFile {
 	return groupFile
 }
 
+// 根据文件ID 和 GroupID 查询文件路径
+func getFilePath(wpsSid string, groupID int, fileID string) string {
+	groupFilePathResult := GroupFilePathResult{}
+
+	cacheName := fileID + "-path.json"
+	if wf.Cache.Exists(cacheName) {
+		wf.Cache.LoadJSON(cacheName, &groupFilePathResult.Path)
+	}
+
+	if wf.Cache.Expired(cacheName, maxCacheAge) {
+		req, err := http.NewRequest("GET", fmt.Sprintf("https://www.kdocs.cn/3rd/drive/api/v5/groups/%d/files/%s/path", groupID, fileID), nil)
+		req.Header.Add("Cookie", "wps_sid="+wpsSid)
+		client := &http.Client{}
+		resp, err := client.Do(req)
+
+		if err != nil {
+			wf.WarnEmpty("查询失败", err.Error())
+			return ""
+		}
+
+		result, _ := ioutil.ReadAll(resp.Body)
+		json.Unmarshal(result, &groupFilePathResult)
+
+		wf.Cache.StoreJSON(cacheName, groupFilePathResult.Path)
+	}
+	var paths []string
+	for index, path := range groupFilePathResult.Path {
+		if index == 0 && path.Type == "linkfolder" {
+			paths = append(paths, "团队文档")
+		}
+		paths = append(paths, path.Fname)
+	}
+	return "/" + strings.Join(paths, "/")
+}
+
 //查询最近的文档
 func getLatest(wpsSid string) {
+	wpsCacheDir := os.Getenv("wps_cache_dir")
 
 	files := []LatestFile{}
 
@@ -210,10 +264,15 @@ func getLatest(wpsSid string) {
 		Var("path", "/").Valid(true).Autocomplete("/")
 
 	for _, file := range files {
+		quickLookURL := file.Path
+		if file.Path == "" {
+			quickLookURL = wpsCacheDir + getFilePath(wpsSid, file.GroupID, file.FileID)
+		}
 		item := wf.NewItem(fmt.Sprintf("%s", file.Name)).
 			Subtitle(fmt.Sprintf("%s前 %s上阅读 %s", getTimeDiff(file.Mtime/1000), file.OriginalDeviceType, file.OriginalDeviceName)).
 			Valid(true).Icon(getIcon(file.Name)).
-			Var("fileid", file.FileID).Var("name", file.Name)
+			Var("fileid", file.FileID).Var("name", file.Name).
+			Quicklook(quickLookURL)
 		item.Opt().Subtitle("复制分享连接")
 		item.Cmd().Subtitle("在 WPS 中查看")
 	}
@@ -222,11 +281,11 @@ func getLatest(wpsSid string) {
 
 func queryDocs(wpsSid string, query string) {
 	queryResult := QueryResult{}
-	files := queryResult.Files
 	cacheName := query + ".json"
+	wpsCacheDir := os.Getenv("wps_cache_dir")
 
 	if wf.Cache.Exists(cacheName) {
-		wf.Cache.LoadJSON(cacheName, &files)
+		wf.Cache.LoadJSON(cacheName, &queryResult.Files)
 	}
 
 	if wf.Cache.Expired(cacheName, maxCacheAge) {
@@ -257,14 +316,19 @@ func queryDocs(wpsSid string, query string) {
 		wf.Cache.StoreJSON(cacheName, queryResult.Files)
 	}
 
-	if len(files) == 0 {
+	if len(queryResult.Files) == 0 {
 		wf.WarnEmpty("没有找到文件", "请使用其他关键词搜索")
 	}
 
-	for _, file := range files {
+	for _, file := range queryResult.Files {
+		quickLookURL := wpsCacheDir + "/" + strings.Replace(file.Path, "我的云文档", "团队文档", 1) + "/" + file.Fname
+		if _, err := os.Stat(quickLookURL); os.IsNotExist(err) {
+			quickLookURL = strings.Replace(quickLookURL, "/团队文档", "", 1)
+		}
 		wf.NewItem(fmt.Sprintf("%s", file.Fname)).
 			Subtitle(fmt.Sprintf("%s前 %s %d", getTimeDiff(file.Mtime), file.Path, file.Fsize)).
 			Valid(true).Icon(getIcon(file.Fname)).
+			Quicklook(quickLookURL).
 			Var("fileid", fmt.Sprintf("%d", file.ID)).Cmd().Subtitle("在 WPS 中查看")
 	}
 	wf.SendFeedback()
@@ -300,10 +364,12 @@ func getGroups(wpsSid string) {
 		wf.Cache.StoreJSON(groupCacheName, queryResult.Files)
 		for _, file := range queryResult.Files {
 			groupid := fmt.Sprintf("%d", file.LinkgroupID)
+			isLinkGroup := true
 			if groupid == "0" {
+				isLinkGroup = false
 				groupid = fmt.Sprintf("%d", file.GroupID)
 			}
-			wf.Cache.StoreJSON(getMd5("/"+file.Fname)+".json", GroupFile{GroupID: groupid, FileID: file.ID})
+			wf.Cache.StoreJSON(getMd5("/"+file.Fname)+".json", GroupFile{GroupID: groupid, IsLinkGroup: isLinkGroup, FileID: file.ID})
 		}
 	}
 
@@ -335,10 +401,12 @@ func getGroupFiles(path string, wpsSid string) {
 	parentID := os.Getenv("fileid")
 	parentFileID := os.Getenv("parentFileid")
 	wpsCacheDir := os.Getenv("wps_cache_dir")
+	isLinkGroup := true
 	log.Printf("cacheDir=%s", wpsCacheDir)
 	if groupID == "" {
 		groupFile := getGroupFile(path)
 		groupID = groupFile.GroupID
+		isLinkGroup = groupFile.IsLinkGroup
 		parentID = fmt.Sprintf("%d", groupFile.FileID)
 	}
 
@@ -375,7 +443,7 @@ func getGroupFiles(path string, wpsSid string) {
 
 		wf.Cache.StoreJSON(cacheName, queryResult.Files)
 		for _, file := range queryResult.Files {
-			wf.Cache.StoreJSON(getMd5(path+"/"+file.Fname)+".json", GroupFile{GroupID: groupID, FileID: file.ID})
+			wf.Cache.StoreJSON(getMd5(path+"/"+file.Fname)+".json", GroupFile{GroupID: groupID, IsLinkGroup: isLinkGroup, FileID: file.ID})
 		}
 	}
 
@@ -390,14 +458,17 @@ func getGroupFiles(path string, wpsSid string) {
 	item.Cmd().Subtitle("在 WPS 中查看")
 
 	for _, file := range queryResult.Files {
-
+		quickLookURL := wpsCacheDir + path + "/" + file.Fname
+		if isLinkGroup {
+			quickLookURL = wpsCacheDir + "/团队文档" + path + "/" + file.Fname
+		}
 		item := wf.NewItem(fmt.Sprintf("%s", file.Fname)).
 			Subtitle(fmt.Sprintf("%s前", getTimeDiff(file.Mtime))).
 			Valid(true).Icon(getFtypeIcon(file.Fname, file.Ftype)).
 			Var("groupid", groupID).Var("fileid", fmt.Sprintf("%d", file.ID)).
 			Var("parentFileid", parentID).
 			Var("path", path+"/"+file.Fname).Valid(true).Autocomplete(path + "/" + file.Fname).
-			Quicklook(wpsCacheDir + path + "/" + file.Fname)
+			Quicklook(quickLookURL)
 		item.Opt().Subtitle("复制分享连接")
 		item.Cmd().Subtitle("在 WPS 中查看")
 	}
