@@ -11,6 +11,12 @@ Alfred Workflow for WPS Office
 
 配置环境变量 `wps_cache_dir` 为 wps 缓存目录，如 `/Users/zacksleo/Library/Containers/com.kingsoft.wpsoffice.mac/Data/Library/Application Support/Kingsoft/WPS Cloud Files/userdata/qing/filecache/zacksleo的云文档`
 
+`file_path_expire_mins` 文件路径缓存时间
+`latest_expire_mins` 最近使用记录缓存时间
+`query_expire_mins` 查询缓存时间
+`groups_expire_mins` 分组缓存时间
+`group_file_expire_mins` 分组目录缓存时间
+
 ## 登录
 
 1. 登录网页版[wps](https://kdocs.cn), 登录成功后, 在 Cookie 中获取 wps_sid

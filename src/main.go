@@ -18,6 +18,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,9 +27,8 @@ import (
 
 var (
 	wf              *aw.Workflow
-	recentCacheName = "recent.json"     // Filename of cached repo list
-	groupCacheName  = "group.json"      // Filename of cached repo list
-	maxCacheAge     = 180 * time.Minute // How long to cache repo list for
+	recentCacheName = "recent.json" // Filename of cached repo list
+	groupCacheName  = "group.json"  // Filename of cached repo list
 )
 
 //注销登录时，删除钥匙串中存储的信息，删除缓存信息
@@ -196,6 +196,14 @@ func getGroupFile(text string) GroupFile {
 	return groupFile
 }
 
+func getCacheAge(key string) time.Duration {
+	expireMinute, err := strconv.Atoi(os.Getenv(key))
+	if err != nil {
+		return 180 * time.Minute
+	}
+	return time.Duration(expireMinute) * time.Minute
+}
+
 // 根据文件ID 和 GroupID 查询文件路径
 func getFilePath(wpsSid string, groupID int, fileID string) string {
 	groupFilePathResult := GroupFilePathResult{}
@@ -205,7 +213,7 @@ func getFilePath(wpsSid string, groupID int, fileID string) string {
 		wf.Cache.LoadJSON(cacheName, &groupFilePathResult.Path)
 	}
 
-	if wf.Cache.Expired(cacheName, maxCacheAge) {
+	if wf.Cache.Expired(cacheName, getCacheAge("file_path_expire_mins")) {
 		req, err := http.NewRequest("GET", fmt.Sprintf("https://www.kdocs.cn/3rd/drive/api/v5/groups/%d/files/%s/path", groupID, fileID), nil)
 		req.Header.Add("Cookie", "wps_sid="+wpsSid)
 		client := &http.Client{}
@@ -241,7 +249,7 @@ func getLatest(wpsSid string) {
 		wf.Cache.LoadJSON(recentCacheName, &files)
 	}
 
-	if wf.Cache.Expired(recentCacheName, maxCacheAge) {
+	if wf.Cache.Expired(recentCacheName, getCacheAge("latest_expire_mins")) {
 		req, err := http.NewRequest("GET", "https://www.kdocs.cn/3rd/drive/api/v3/roaming", nil)
 		req.Header.Add("Cookie", "wps_sid="+wpsSid)
 		q := req.URL.Query()
@@ -294,7 +302,7 @@ func queryDocs(wpsSid string, query string) {
 		wf.Cache.LoadJSON(cacheName, &queryResult.Files)
 	}
 
-	if wf.Cache.Expired(cacheName, maxCacheAge) {
+	if wf.Cache.Expired(cacheName, getCacheAge("query_expire_mins")) {
 		req, err := http.NewRequest("GET", "https://www.kdocs.cn/3rd/drive/api/v3/search/files", nil)
 		req.Header.Add("Cookie", "wps_sid="+wpsSid)
 		q := req.URL.Query()
@@ -356,7 +364,7 @@ func getGroups(wpsSid string) {
 		wf.Cache.LoadJSON(groupCacheName, &queryResult.Files)
 	}
 
-	if wf.Cache.Expired(groupCacheName, maxCacheAge) {
+	if wf.Cache.Expired(groupCacheName, getCacheAge("groups_expire_mins")) {
 		req, err := http.NewRequest("GET", "https://www.kdocs.cn/3rd/drive/api/v5/groups/special/files", nil)
 		req.Header.Add("Cookie", "wps_sid="+wpsSid)
 		q := req.URL.Query()
@@ -433,7 +441,7 @@ func getGroupFiles(path string, wpsSid string) {
 		wf.Cache.LoadJSON(cacheName, &queryResult.Files)
 	}
 
-	if wf.Cache.Expired(cacheName, maxCacheAge) {
+	if wf.Cache.Expired(cacheName, getCacheAge("group_file_expire_mins")) {
 		req, err := http.NewRequest("GET", fmt.Sprintf("https://www.kdocs.cn/3rd/drive/api/v5/groups/%s/files", groupID), nil)
 		req.Header.Add("Cookie", "wps_sid="+wpsSid)
 		q := req.URL.Query()
