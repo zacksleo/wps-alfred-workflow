@@ -40,6 +40,16 @@
 				<key>vitoclose</key>
 				<false/>
 			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>6AA7B8EE-4120-4D35-A4C7-CE864F761551</string>
+				<key>modifiers</key>
+				<integer>262144</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
 		</array>
 	</dict>
 	<key>createdby</key>
@@ -167,6 +177,19 @@
 			<key>version</key>
 			<integer>3</integer>
 		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>path</key>
+				<string>{var:dir}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.revealfile</string>
+			<key>uid</key>
+			<string>6AA7B8EE-4120-4D35-A4C7-CE864F761551</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
 	</array>
 	<key>readme</key>
 	<string># WPS Alfred Workflow
@@ -245,6 +268,13 @@ wps_sid 会保存在钥匙串中
 			<integer>185</integer>
 			<key>ypos</key>
 			<integer>95</integer>
+		</dict>
+		<key>6AA7B8EE-4120-4D35-A4C7-CE864F761551</key>
+		<dict>
+			<key>xpos</key>
+			<integer>435</integer>
+			<key>ypos</key>
+			<integer>400</integer>
 		</dict>
 		<key>9C1E23A0-A815-4736-BFC0-E431DBC76827</key>
 		<dict>

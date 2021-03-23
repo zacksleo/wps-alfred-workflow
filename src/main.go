@@ -284,11 +284,12 @@ func getLatest(wpsSid string) {
 		item := wf.NewItem(file.Name).
 			Subtitle(fmt.Sprintf("%s %s上阅读 %s", getTimeDiff(file.Mtime/1000), file.OriginalDeviceType, file.OriginalDeviceName)).
 			Valid(true).Icon(getIcon(file.Name)).
-			Var("fileid", file.FileID).Var("name", file.Name).
+			Var("fileid", file.FileID).Var("name", file.Name).Var("dir", quickLookURL).
 			Var("url", fmt.Sprintf("https://www.kdocs.cn/p/%s", file.FileID)).
 			Quicklook(quickLookURL)
 		item.Opt().Subtitle("复制分享连接")
 		item.Cmd().Subtitle("在 WPS 中查看")
+		item.Ctrl().Subtitle("在 Finder 中查看")
 	}
 	wf.SendFeedback()
 }
@@ -497,7 +498,7 @@ func getGroupFiles(path string, wpsSid string) {
 		item := wf.NewItem(file.Fname).
 			Subtitle(getTimeDiff(file.Mtime)).
 			Valid(true).Icon(getFtypeIcon(file.Fname, file.Ftype)).
-			Var("groupid", groupID).Var("fileid", fmt.Sprintf("%d", file.ID)).
+			Var("groupid", groupID).Var("fileid", fmt.Sprintf("%d", file.ID)).Var("dir", quickLookURL).
 			Var("parentFileid", parentID).
 			Var("name", file.Fname).
 			Var("url", url).
@@ -505,6 +506,7 @@ func getGroupFiles(path string, wpsSid string) {
 			Quicklook(quickLookURL)
 		item.Opt().Subtitle("复制分享连接")
 		item.Cmd().Subtitle("在 WPS 中查看")
+		item.Ctrl().Subtitle("在 Finder 中查看")
 	}
 	wf.SendFeedback()
 }
