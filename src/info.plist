@@ -50,6 +50,31 @@
 				<key>vitoclose</key>
 				<false/>
 			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>CE0B8A25-E17D-4BCB-AB29-03C9FDA48CBB</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>9C1E23A0-A815-4736-BFC0-E431DBC76827</key>
+		<array/>
+		<key>CE0B8A25-E17D-4BCB-AB29-03C9FDA48CBB</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>31D1F874-8F24-4467-8CBE-A1B8DA027A53</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
 		</array>
 	</dict>
 	<key>createdby</key>
@@ -190,6 +215,51 @@
 			<key>version</key>
 			<integer>1</integer>
 		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>autopaste</key>
+				<true/>
+				<key>clipboardtextrtf</key>
+				<string>{\rtf1\ansi\ansicpg936\cocoartf2578
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 HelveticaNeue;\f1\fnil\fcharset134 PingFangSC-Regular;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0\c84706\cname controlTextColor;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f0\fs26 \cf2 \{var:url\} \
+[
+\f1 \'bd\'f0\'c9\'bd\'ce\'c4\'b5\'b5
+\f0 ] \{var:name\}}</string>
+				<key>ignoredynamicplaceholders</key>
+				<false/>
+				<key>transient</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.clipboard</string>
+			<key>uid</key>
+			<string>31D1F874-8F24-4467-8CBE-A1B8DA027A53</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argument</key>
+				<string></string>
+				<key>passthroughargument</key>
+				<false/>
+				<key>variables</key>
+				<dict/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.argument</string>
+			<key>uid</key>
+			<string>CE0B8A25-E17D-4BCB-AB29-03C9FDA48CBB</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
 	</array>
 	<key>readme</key>
 	<string># WPS Alfred Workflow
@@ -253,6 +323,13 @@ wps_sid 会保存在钥匙串中
 在 keychain 中，搜索 wps, 找到 wps_sid 并删除</string>
 	<key>uidata</key>
 	<dict>
+		<key>31D1F874-8F24-4467-8CBE-A1B8DA027A53</key>
+		<dict>
+			<key>xpos</key>
+			<integer>435</integer>
+			<key>ypos</key>
+			<integer>575</integer>
+		</dict>
 		<key>5335FCB0-725D-406E-8307-C5D9967B5CC7</key>
 		<dict>
 			<key>xpos</key>
@@ -274,21 +351,28 @@ wps_sid 会保存在钥匙串中
 			<key>xpos</key>
 			<integer>435</integer>
 			<key>ypos</key>
-			<integer>400</integer>
+			<integer>415</integer>
 		</dict>
 		<key>9C1E23A0-A815-4736-BFC0-E431DBC76827</key>
 		<dict>
 			<key>xpos</key>
-			<integer>430</integer>
+			<integer>435</integer>
 			<key>ypos</key>
 			<integer>260</integer>
+		</dict>
+		<key>CE0B8A25-E17D-4BCB-AB29-03C9FDA48CBB</key>
+		<dict>
+			<key>xpos</key>
+			<integer>350</integer>
+			<key>ypos</key>
+			<integer>605</integer>
 		</dict>
 		<key>F824E2BA-7848-4349-A7DB-7179BC53287C</key>
 		<dict>
 			<key>xpos</key>
-			<integer>430</integer>
+			<integer>435</integer>
 			<key>ypos</key>
-			<integer>95</integer>
+			<integer>100</integer>
 		</dict>
 	</dict>
 	<key>variables</key>
