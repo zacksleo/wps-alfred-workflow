@@ -73,6 +73,20 @@ type FileResult struct {
 	Files      []File
 }
 
+// GroupResult define
+type GroupResult struct {
+	NextFilter string `json:"next_filter"`
+	NextOffset int    `json:"next_offset"`
+	Result     string `json:"result"`
+	Files      []Group
+}
+
+// Group struct
+type Group struct {
+	File
+	LinkgroupID int64 `json:"linkgroupid"`
+}
+
 func NewWps(sid string) *Wps {
 	return &Wps{sid}
 }
