@@ -14,8 +14,9 @@ var (
 )
 
 type User struct {
-	wf  *aw.Workflow
-	Wps *Wps
+	wf          *aw.Workflow
+	Wps         *Wps
+	wpsCacheDir string
 }
 
 // GroupFile struct
@@ -34,7 +35,6 @@ func getGroupFile(wf *aw.Workflow, text string) GroupFile {
 //查询最近的文档
 func (user *User) getLatest() {
 	wf := user.wf
-	wpsCacheDir := os.Getenv("wps_cache_dir")
 
 	files := []LatestFile{}
 
@@ -61,7 +61,7 @@ func (user *User) getLatest() {
 	for _, file := range files {
 		quickLookURL := file.Path
 		if file.Path == "" {
-			quickLookURL = wpsCacheDir + user.getFilePath(file.GroupID, file.FileID)
+			quickLookURL = user.wpsCacheDir + user.getFilePath(file.GroupID, file.FileID)
 		}
 		item := wf.NewItem(file.Name).
 			Subtitle(fmt.Sprintf("%s %s上阅读 %s", getTimeDiff(file.Mtime/1000), file.OriginalDeviceType, file.OriginalDeviceName)).
@@ -80,7 +80,6 @@ func (user *User) queryDocs(query string) {
 	wf := user.wf
 	queryResult := QueryResult{}
 	cacheName := query + ".json"
-	wpsCacheDir := os.Getenv("wps_cache_dir")
 
 	if wf.Cache.Exists(cacheName) {
 		wf.Cache.LoadJSON(cacheName, &queryResult.Files)
@@ -103,7 +102,7 @@ func (user *User) queryDocs(query string) {
 	}
 
 	for _, file := range queryResult.Files {
-		quickLookURL := wpsCacheDir + "/" + strings.Replace(file.Path, "我的云文档", "团队文档", 1) + "/" + file.Fname
+		quickLookURL := user.wpsCacheDir + "/" + strings.Replace(file.Path, "我的云文档", "团队文档", 1) + "/" + file.Fname
 		if _, err := os.Stat(quickLookURL); os.IsNotExist(err) {
 			quickLookURL = strings.Replace(quickLookURL, "/团队文档", "", 1)
 		}
@@ -185,7 +184,6 @@ func (user *User) getGroupFiles(path string) {
 	groupID := os.Getenv("groupid")
 	parentID := os.Getenv("fileid")
 	parentFileID := os.Getenv("parentFileid")
-	wpsCacheDir := os.Getenv("wps_cache_dir")
 	isLinkGroup := true
 	if groupID == "" {
 		groupFile := getGroupFile(wf, path)
@@ -228,10 +226,10 @@ func (user *User) getGroupFiles(path string) {
 	item.Cmd().Subtitle("在 WPS 中查看")
 
 	for _, file := range queryResult.Files {
-		quickLookURL := wpsCacheDir + path + "/" + file.Fname
+		quickLookURL := user.wpsCacheDir + path + "/" + file.Fname
 		url := fmt.Sprintf("https://www.kdocs.cn/p/%d", file.ID)
 		if isLinkGroup {
-			quickLookURL = wpsCacheDir + "/团队文档" + path + "/" + file.Fname
+			quickLookURL = user.wpsCacheDir + "/团队文档" + path + "/" + file.Fname
 			if strings.Contains(file.Ftype, "folder") {
 				url = fmt.Sprintf("https://www.kdocs.cn/team/%d/%d", file.GroupID, file.ID)
 			}

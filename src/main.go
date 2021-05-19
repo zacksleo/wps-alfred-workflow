@@ -10,6 +10,7 @@
 package main
 
 import (
+	"os"
 	"strings"
 
 	aw "github.com/deanishe/awgo"
@@ -55,8 +56,9 @@ func run() {
 		return
 	}
 	wpsSid, err := wf.Keychain.Get("wps_sid")
+	wpsCacheDir := os.Getenv("wps_cache_dir")
 
-	user := User{wf, NewWps(wpsSid)}
+	user := User{wf, NewWps(wpsSid), wpsCacheDir}
 
 	// 如果没有找到钥匙串，则提醒用户登录
 	if err != nil {
