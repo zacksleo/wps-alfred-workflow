@@ -10,7 +10,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 
 	aw "github.com/deanishe/awgo"
@@ -36,8 +35,7 @@ func login(user *User, query string) {
 		return
 	}
 	wf.Keychain.Set("wps_sid", query)
-	log.Printf("set keychain =%s\n", query)
-	user.wpsSid = query
+	user.Wps.sid = query
 	user.getLatest()
 }
 
@@ -58,7 +56,7 @@ func run() {
 	}
 	wpsSid, err := wf.Keychain.Get("wps_sid")
 
-	user := User{wf, wpsSid}
+	user := User{wf, NewWps(wpsSid)}
 
 	// 如果没有找到钥匙串，则提醒用户登录
 	if err != nil {
